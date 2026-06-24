@@ -1,0 +1,21 @@
+name: Smoke
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  cli:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Compile and run sample audit
+        run: |
+          python -m py_compile auditor.py
+          python auditor.py --file sample.html --out sample-ci-report.md || test "$?" -eq 1
+          test -s sample-ci-report.md
+          grep -q "Website QA Report" sample-ci-report.md
+          test -f assets/screenshot.png

@@ -4,6 +4,12 @@ A **zero-dependency** Python CLI that audits any web page for common **SEO, acce
 mobile, and social-share** problems, scores it, and writes a client-ready Markdown report.
 Pure standard library — no `pip install` required.
 
+![Website QA Auditor screenshot](assets/screenshot.png)
+
+## Portfolio proof
+- [Case study](PORTFOLIO-CASE-STUDY.md) — how this becomes a sellable website QA/deployment audit.
+- GitHub Actions smoke check compiles the CLI, runs the sample audit, and confirms a Markdown report is produced.
+
 ## What it checks
 - **SEO:** `<title>` presence + length, meta description, heading structure (one `<h1>`)
 - **Accessibility:** image `alt` text, `<html lang>`, mobile `<meta viewport>`
