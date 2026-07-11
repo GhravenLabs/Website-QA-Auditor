@@ -55,3 +55,6 @@ anyone can run with zero setup.
 
 ## License
 MIT © Rolly Calma ([Ghraven](https://github.com/Ghraven))
+
+---
+_By **Rolly Calma** — see live demos & services at **[rollycalma.com](https://rollycalma.com/)**._
