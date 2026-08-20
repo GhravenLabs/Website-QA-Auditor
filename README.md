@@ -7,6 +7,7 @@ Pure standard library — no `pip install` required.
 ![Website QA Auditor screenshot](assets/screenshot.png)
 
 ## Portfolio proof
+- [Live browser demo](https://qa-auditor.onrender.com/) — run an instant site-health check without cloning the repo.
 - [Case study](PORTFOLIO-CASE-STUDY.md) — how this becomes a sellable website QA/deployment audit.
 - GitHub Actions smoke check compiles the CLI, runs the sample audit, and confirms a Markdown report is produced.
 
