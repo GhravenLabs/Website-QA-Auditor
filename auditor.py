@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 import urllib.request
 from html.parser import HTMLParser
@@ -37,6 +38,10 @@ class PageParser(HTMLParser):
         self.links: list[str] = []
         self.headings: dict[int, int] = {i: 0 for i in range(1, 7)}
         self.mixed = 0                       # http:// resources on the page
+        self.canonical = ""
+        self.json_ld_count = 0
+        self._in_json_ld = False
+        self.visible_text: list[str] = []
 
     def handle_starttag(self, tag, attrs):
         d = {k.lower(): (v or "") for k, v in attrs}
@@ -56,20 +61,31 @@ class PageParser(HTMLParser):
         elif tag == "link":
             if d.get("rel"):
                 self.rels.add(d["rel"].lower())
+                if "canonical" in d["rel"].lower():
+                    self.canonical = d.get("href", "")
         elif tag == "img":
             self.imgs.append("alt" in d and bool(d["alt"].strip()))
         elif tag == "a":
             self.links.append(d.get("href", ""))
+        elif tag == "script":
+            self._in_json_ld = "ld+json" in d.get("type", "").lower()
         elif tag in ("h1", "h2", "h3", "h4", "h5", "h6"):
             self.headings[int(tag[1])] += 1
 
     def handle_endtag(self, tag):
         if tag == "title":
             self._in_title = False
+        elif tag == "script":
+            self._in_json_ld = False
 
     def handle_data(self, data):
         if self._in_title:
             self.title += data
+        elif self._in_json_ld:
+            if data.strip():
+                self.json_ld_count += 1
+        elif data.strip():
+            self.visible_text.append(data.strip())
 
 
 def fetch(target: str) -> tuple[str, int]:
@@ -155,6 +171,34 @@ def audit(p: PageParser, size_bytes: int) -> list[tuple[str, str, str]]:
     kb = size_bytes / 1024
     rows.append((PASS, "Page weight", f"{kb:.0f} KB.") if kb < 250
                 else (WARN, "Page weight", f"{kb:.0f} KB HTML (heavy — consider trimming)."))
+
+    # AI-search / answer-engine readiness
+    if p.canonical:
+        rows.append((PASS, "Canonical URL", "Declared for search and answer engines."))
+    else:
+        rows.append((WARN, "Canonical URL", "Missing — search tools may see duplicate or unclear page identity."))
+
+    robots = p.metas.get("robots", "").lower()
+    if "noindex" in robots:
+        rows.append((FAIL, "Indexability", "robots meta contains noindex, so search and AI answer engines should not surface it."))
+    else:
+        rows.append((PASS, "Indexability", "No robots noindex directive found."))
+
+    if p.json_ld_count:
+        rows.append((PASS, "Structured data", f"{p.json_ld_count} JSON-LD block(s) found."))
+    else:
+        rows.append((WARN, "Structured data", "No JSON-LD found — add Organization, LocalBusiness, Product, FAQ, or Service schema where relevant."))
+
+    text = " ".join(p.visible_text).lower()
+    answer_terms = [
+        "service", "services", "pricing", "price", "contact", "book", "hours",
+        "location", "faq", "about", "guarantee", "process",
+    ]
+    matches = sorted({term for term in answer_terms if re.search(rf"\b{re.escape(term)}\b", text)})
+    if len(matches) >= 3:
+        rows.append((PASS, "Answer-ready content", f"Clear business/service terms found: {', '.join(matches[:5])}."))
+    else:
+        rows.append((WARN, "Answer-ready content", "Add plain text for services, pricing/process, location/contact, and FAQ-style answers."))
     return rows
 
 

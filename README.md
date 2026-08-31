@@ -15,6 +15,7 @@ Pure standard library — no `pip install` required.
 - **SEO:** `<title>` presence + length, meta description, heading structure (one `<h1>`)
 - **Accessibility:** image `alt` text, `<html lang>`, mobile `<meta viewport>`
 - **Social share:** Open Graph tags (`og:title/description/image`) so links preview properly
+- **AI-search readiness:** canonical URL, indexability, JSON-LD structured data, and answer-ready service/contact/FAQ copy
 - **Hygiene:** empty/placeholder links, mixed `http://` content, favicon, page weight
 
 Each finding is a **real, fixable issue** with a plain-English reason — and the tool exits non-zero
@@ -51,8 +52,9 @@ See `sample.html` + `sample-report.md` for a full example.
   client summary + top-3 fixes — gracefully skipped if no key is set
 
 ## Why it exists
-A fast, honest health check for the websites I build and audit — and a single-file Python tool
-anyone can run with zero setup.
+A fast, honest health check for the websites I build and audit. It is also a practical proof demo
+for Webloom-style site QA: the report tells a client what blocks search snippets, accessibility,
+social previews, and AI answer engines from understanding the page.
 
 ## License
 MIT © Rolly Calma ([Ghraven](https://github.com/Ghraven))
