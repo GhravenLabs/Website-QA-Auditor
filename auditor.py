@@ -41,6 +41,8 @@ class PageParser(HTMLParser):
         self.canonical = ""
         self.json_ld_count = 0
         self._in_json_ld = False
+        self._in_script = False
+        self._in_style = False
         self.visible_text: list[str] = []
 
     def handle_starttag(self, tag, attrs):
@@ -68,7 +70,10 @@ class PageParser(HTMLParser):
         elif tag == "a":
             self.links.append(d.get("href", ""))
         elif tag == "script":
+            self._in_script = True
             self._in_json_ld = "ld+json" in d.get("type", "").lower()
+        elif tag == "style":
+            self._in_style = True
         elif tag in ("h1", "h2", "h3", "h4", "h5", "h6"):
             self.headings[int(tag[1])] += 1
 
@@ -77,6 +82,9 @@ class PageParser(HTMLParser):
             self._in_title = False
         elif tag == "script":
             self._in_json_ld = False
+            self._in_script = False
+        elif tag == "style":
+            self._in_style = False
 
     def handle_data(self, data):
         if self._in_title:
@@ -84,7 +92,7 @@ class PageParser(HTMLParser):
         elif self._in_json_ld:
             if data.strip():
                 self.json_ld_count += 1
-        elif data.strip():
+        elif not (self._in_script or self._in_style) and data.strip():
             self.visible_text.append(data.strip())
 
 
