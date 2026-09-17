@@ -63,10 +63,12 @@ class PageParser(HTMLParser):
             if d.get("name", "").lower() == "viewport":
                 self.has_viewport = True
         elif tag == "link":
-            if d.get("rel"):
-                self.rels.add(d["rel"].lower())
-                if "canonical" in d["rel"].lower():
-                    self.canonical = d.get("href", "")
+            href = d.get("href", "").strip()
+            if d.get("rel") and href:
+                rels = set(d["rel"].lower().split())
+                self.rels.update(rels)
+                if "canonical" in rels:
+                    self.canonical = href
         elif tag == "img":
             self.imgs.append("alt" in d and bool(d["alt"].strip()))
         elif tag == "a":
@@ -163,7 +165,8 @@ def audit(p: PageParser, size_bytes: int) -> list[tuple[str, str, str]]:
     else:
         rows.append((WARN, "Social share (OG)", "No Open Graph tags — shared links show a blank preview."))
 
-    rows.append((PASS, "Favicon", "Declared.") if any("icon" in r for r in p.rels)
+    icon_rels = {"icon", "apple-touch-icon", "apple-touch-icon-precomposed", "mask-icon"}
+    rows.append((PASS, "Favicon", "Declared.") if p.rels & icon_rels
                 else (WARN, "Favicon", "No favicon link — looks unfinished in tabs/bookmarks."))
 
     # Hygiene

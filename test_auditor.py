@@ -39,6 +39,30 @@ def _by_check(rows):
     return {check: (severity, detail) for severity, check, detail in rows}
 
 
+@pytest.mark.parametrize("rel", ["notcanonical", "canonicalized", "iconic"])
+def test_unrelated_link_rel_tokens_do_not_pass_checks(rel):
+    rows = _by_check(_rows_for(f'<link rel="{rel}" href="https://example.com/">'))
+    assert rows["Canonical URL"][0] == WARN
+    assert rows["Favicon"][0] == WARN
+
+
+@pytest.mark.parametrize("rel", ["icon", "shortcut icon", "apple-touch-icon", "ICON", "mask-icon", "apple-touch-icon-precomposed"])
+def test_supported_favicon_rel_tokens_are_recognized(rel):
+    rows = _by_check(_rows_for(f'<link rel="{rel}" href="/icon.png">'))
+    assert rows["Favicon"][0] == PASS
+
+
+def test_canonical_rel_is_case_insensitive_and_whitespace_separated():
+    rows = _by_check(_rows_for('<link rel="alternate\tCANONICAL" href="https://example.com/">'))
+    assert rows["Canonical URL"][0] == PASS
+
+
+@pytest.mark.parametrize("href", ["", "   "])
+def test_empty_link_target_is_not_a_favicon_declaration(href):
+    rows = _by_check(_rows_for(f'<link rel="icon" href="{href}">'))
+    assert rows["Favicon"][0] == WARN
+
+
 def test_ai_search_readiness_signals_pass_when_present():
     rows = _by_check(
         _rows_for(
