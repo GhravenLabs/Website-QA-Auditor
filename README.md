@@ -26,7 +26,7 @@ if anything fails (handy for CI).
 python auditor.py https://example.com                 # audit a live URL
 python auditor.py --file sample.html                  # audit a local file
 python auditor.py https://example.com --out report.md # write a Markdown report
-python auditor.py https://example.com --links         # also HEAD-check links for 404s
+python auditor.py https://example.com --links         # check HTTP(S) links; GET fallback if HEAD is unsupported
 python auditor.py https://example.com --ai            # add an AI client summary (needs ANTHROPIC_API_KEY)
 ```
 
@@ -44,6 +44,12 @@ python auditor.py https://example.com --ai            # add an AI client summary
   2 fail, 7 warn, 2 pass
 ```
 See `sample.html` + `sample-report.md` for a full example.
+
+Link checks inspect up to 20 unique HTTP(S) URLs, ignoring fragment differences and
+non-web schemes such as `mailto:`. A HEAD response of 405 or 501 triggers a GET
+fallback that closes after the response headers. This checks reachability, not
+whether an in-page fragment exists. Report-writing failures return exit code 2
+with a diagnostic on stderr; audit findings still use exit code 1.
 
 ## How it works
 - Parses HTML with the standard-library `html.parser` (no BeautifulSoup needed)

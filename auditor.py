@@ -20,6 +20,7 @@ import re
 import sys
 import urllib.request
 import urllib.parse
+import urllib.error
 from html import escape
 from html.parser import HTMLParser
 
@@ -219,9 +220,12 @@ def check_links(links: list[str], base: str, cap: int = 20) -> list[tuple[str, s
     out = []
     seen = set()
     for href in links:
-        if not href or href.startswith(("#", "mailto:", "tel:", "javascript:")):
+        href = href.strip()
+        if not href or href.startswith("#"):
             continue
-        url = href if href.startswith("http") else urllib.parse.urljoin(base, href)
+        url = urllib.parse.urldefrag(urllib.parse.urljoin(base, href))[0]
+        if urllib.parse.urlsplit(url).scheme.lower() not in {"http", "https"}:
+            continue
         if url in seen:
             continue
         if len(seen) >= cap:
@@ -230,7 +234,19 @@ def check_links(links: list[str], base: str, cap: int = 20) -> list[tuple[str, s
         try:
             req = urllib.request.Request(url, method="HEAD",
                                          headers={"User-Agent": "Website-QA-Auditor/1.0"})
-            with urllib.request.urlopen(req, timeout=10) as r:
+            try:
+                response = urllib.request.urlopen(req, timeout=10)
+            except urllib.error.HTTPError as error:
+                if error.code not in (405, 501):
+                    raise
+                error.close()
+                # Some valid pages reject HEAD. Read response headers only;
+                # close the GET without downloading the body.
+                req = urllib.request.Request(url, method="GET", headers={
+                    "User-Agent": "Website-QA-Auditor/1.0", "Range": "bytes=0-0",
+                })
+                response = urllib.request.urlopen(req, timeout=10)
+            with response as r:
                 if r.status >= 400:
                     out.append((FAIL, "Broken link", f"{r.status} {url}"))
         except Exception as e:  # noqa
@@ -301,7 +317,7 @@ def main(argv=None):
     ap.add_argument("target", nargs="?", help="URL to audit")
     ap.add_argument("--file", help="audit a local HTML file instead of a URL")
     ap.add_argument("--out", help="write a Markdown report to this path")
-    ap.add_argument("--links", action="store_true", help="also HEAD-check links (network, capped at 20)")
+    ap.add_argument("--links", action="store_true", help="check HTTP(S) links with HEAD/GET fallback (capped at 20)")
     ap.add_argument("--ai", action="store_true", help="append an AI-written client summary")
     args = ap.parse_args(argv)
 
@@ -334,7 +350,12 @@ def main(argv=None):
         md += "\n" + summary
         print(summary)
     if args.out:
-        open(args.out, "w", encoding="utf-8").write(md)
+        try:
+            with open(args.out, "w", encoding="utf-8") as report:
+                report.write(md)
+        except OSError as error:
+            print(f"Could not write report '{args.out}': {error}", file=sys.stderr)
+            return 2
         print(f"\nMarkdown report written to {args.out}")
     return 1 if any(s == FAIL for s, *_ in rows) else 0
 
