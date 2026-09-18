@@ -223,13 +223,21 @@ def check_links(links: list[str], base: str, cap: int = 20) -> list[tuple[str, s
         href = href.strip()
         if not href or href.startswith("#"):
             continue
-        url = urllib.parse.urldefrag(urllib.parse.urljoin(base, href))[0]
-        if urllib.parse.urlsplit(url).scheme.lower() not in {"http", "https"}:
+        if len(seen) >= cap:
+            break
+        try:
+            url = urllib.parse.urldefrag(urllib.parse.urljoin(base, href))[0]
+            if urllib.parse.urlsplit(url).scheme.lower() not in {"http", "https"}:
+                continue
+        except ValueError:
+            # A malformed URL must not abort the rest of the page audit.
+            invalid_key = ("invalid", href)
+            if invalid_key not in seen:
+                seen.add(invalid_key)
+                out.append((FAIL, "Broken link", f"ValueError {href}"))
             continue
         if url in seen:
             continue
-        if len(seen) >= cap:
-            break
         seen.add(url)
         try:
             req = urllib.request.Request(url, method="HEAD",

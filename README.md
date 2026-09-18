@@ -50,6 +50,8 @@ non-web schemes such as `mailto:`. A HEAD response of 405 or 501 triggers a GET
 fallback that closes after the response headers. This checks reachability, not
 whether an in-page fragment exists. Report-writing failures return exit code 2
 with a diagnostic on stderr; audit findings still use exit code 1.
+Malformed URLs are reported as broken links without aborting the remaining audit.
+Repeated malformed values are counted once and share the 20-link check budget.
 
 ## How it works
 - Parses HTML with the standard-library `html.parser` (no BeautifulSoup needed)
