@@ -54,15 +54,15 @@ class PageParser(HTMLParser):
             if v.startswith("http://"):
                 self.mixed += 1
         if tag == "html":
-            self.html_lang = d.get("lang") or None
+            self.html_lang = d.get("lang", "").strip() or None
         elif tag == "title":
             self._in_title = True
         elif tag == "meta":
             key = (d.get("name") or d.get("property") or "").lower()
             if key:
-                self.metas[key] = d.get("content", "")
+                self.metas[key] = d.get("content", "").strip()
             if d.get("name", "").lower() == "viewport":
-                self.has_viewport = True
+                self.has_viewport = self.has_viewport or bool(d.get("content", "").strip())
         elif tag == "link":
             href = d.get("href", "").strip()
             if d.get("rel") and href:
