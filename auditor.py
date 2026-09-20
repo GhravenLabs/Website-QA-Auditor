@@ -76,7 +76,7 @@ class PageParser(HTMLParser):
             self.links.append(d.get("href", ""))
         elif tag == "script":
             self._in_script = True
-            self._in_json_ld = "ld+json" in d.get("type", "").lower()
+            self._in_json_ld = d.get("type", "").strip().lower() == "application/ld+json"
         elif tag == "style":
             self._in_style = True
         elif tag in ("h1", "h2", "h3", "h4", "h5", "h6"):
@@ -95,7 +95,11 @@ class PageParser(HTMLParser):
         if self._in_title:
             self.title += data
         elif self._in_json_ld:
-            if data.strip():
+            try:
+                value = json.loads(data)
+            except ValueError:
+                return
+            if isinstance(value, (dict, list)):
                 self.json_ld_count += 1
         elif not (self._in_script or self._in_style) and data.strip():
             self.visible_text.append(data.strip())
@@ -199,7 +203,7 @@ def audit(p: PageParser, size_bytes: int) -> list[tuple[str, str, str]]:
         rows.append((PASS, "Indexability", "No robots noindex directive found."))
 
     if p.json_ld_count:
-        rows.append((PASS, "Structured data", f"{p.json_ld_count} JSON-LD block(s) found."))
+        rows.append((PASS, "Structured data", f"{p.json_ld_count} JSON-LD object/array block(s) found (syntax only; schema not validated)."))
     else:
         rows.append((WARN, "Structured data", "No JSON-LD found — add Organization, LocalBusiness, Product, FAQ, or Service schema where relevant."))
 
