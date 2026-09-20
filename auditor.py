@@ -193,8 +193,8 @@ def audit(p: PageParser, size_bytes: int) -> list[tuple[str, str, str]]:
         rows.append((WARN, "Canonical URL", "Missing — search tools may see duplicate or unclear page identity."))
 
     robots = p.metas.get("robots", "").lower()
-    if "noindex" in robots:
-        rows.append((FAIL, "Indexability", "robots meta contains noindex, so search and AI answer engines should not surface it."))
+    if {"noindex", "none"} & set(re.split(r"[,\s]+", robots)):
+        rows.append((FAIL, "Indexability", "robots meta contains noindex or none, so search and AI answer engines should not surface it."))
     else:
         rows.append((PASS, "Indexability", "No robots noindex directive found."))
 
