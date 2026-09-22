@@ -50,8 +50,19 @@ class PageParser(HTMLParser):
 
     def handle_starttag(self, tag, attrs):
         d = {k.lower(): (v or "") for k, v in attrs}
-        for v in d.values():
-            if v.startswith("http://"):
+        resource_urls = []
+        if tag in {"img", "script", "iframe", "audio", "video", "source", "track", "embed", "input"}:
+            resource_urls.append(d.get("src", ""))
+        if tag == "video":
+            resource_urls.append(d.get("poster", ""))
+        if tag == "object":
+            resource_urls.append(d.get("data", ""))
+        if tag == "link" and set(d.get("rel", "").lower().split()) & {
+            "stylesheet", "icon", "preload", "modulepreload"
+        }:
+            resource_urls.append(d.get("href", ""))
+        for v in resource_urls:
+            if v.strip().lower().startswith("http://"):
                 self.mixed += 1
         if tag == "html":
             self.html_lang = d.get("lang", "").strip() or None

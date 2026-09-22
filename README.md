@@ -53,6 +53,12 @@ with a diagnostic on stderr; audit findings still use exit code 1.
 Malformed URLs are reported as broken links without aborting the remaining audit.
 Repeated malformed values are counted once and share the 20-link check budget.
 
+The mixed-content check looks for explicit HTTP URLs in common loaded-resource
+attributes (images, scripts, stylesheets, frames and media). Navigation links,
+canonical URLs and metadata are excluded. This is a static warning about insecure
+resource URLs, not browser-network verification; CSS URLs, `srcset`, redirects and
+runtime-generated requests are not inspected.
+
 ## How it works
 - Parses HTML with the standard-library `html.parser` (no BeautifulSoup needed)
 - Collects title/meta/headings/images/links, runs a rule set, and grades A–F
