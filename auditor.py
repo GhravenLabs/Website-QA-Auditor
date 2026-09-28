@@ -71,7 +71,13 @@ class PageParser(HTMLParser):
         elif tag == "meta":
             key = (d.get("name") or d.get("property") or "").lower()
             if key:
-                self.metas[key] = d.get("content", "").strip()
+                content = d.get("content", "").strip()
+                if key == "robots" and key in self.metas:
+                    # Multiple robots tags contribute rules; later tags cannot
+                    # erase an earlier noindex/none directive.
+                    self.metas[key] += "," + content
+                else:
+                    self.metas[key] = content
             if d.get("name", "").lower() == "viewport":
                 self.has_viewport = self.has_viewport or bool(d.get("content", "").strip())
         elif tag == "link":
