@@ -64,6 +64,8 @@ runtime-generated requests are not inspected.
 - Collects title/meta/headings/images/links, runs a rule set, and grades A–F
 - Optional `--ai` mode calls the Anthropic API (via `urllib`, no SDK) to write a friendly
   client summary + top-3 fixes — gracefully skipped if no key is set
+- AI summaries combine all returned text blocks and mark token/context-limited output
+  incomplete. Empty responses are reported explicitly; no automatic retry is made.
 
 ## Why it exists
 A fast, honest health check for the websites I build and audit. It is also a practical proof demo

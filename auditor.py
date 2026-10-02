@@ -336,7 +336,13 @@ def ai_summary(target, rows):
     try:
         with urllib.request.urlopen(req, timeout=30) as r:
             data = json.load(r)
-        return "\n## AI summary\n" + data["content"][0]["text"]
+        text = "".join(block["text"] for block in data["content"] if block.get("type") == "text")
+        if data.get("stop_reason") in {"max_tokens", "model_context_window_exceeded"}:
+            notice = "(AI summary incomplete: generation reached a token or context limit.)"
+            text = f"{text}\n\n{notice}" if text.strip() else notice
+        elif not text.strip():
+            return "\n(AI summary failed: response contained no text)"
+        return "\n## AI summary\n" + text
     except Exception as e:  # noqa
         return f"\n(AI summary failed: {e})"
 
