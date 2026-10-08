@@ -5,6 +5,24 @@ import auditor
 import pytest
 
 
+@pytest.mark.parametrize("positional", [False, True])
+@pytest.mark.parametrize("alias", [False, True])
+@pytest.mark.parametrize("ai", [False, True])
+def test_report_cannot_overwrite_input_html(tmp_path, monkeypatch, capsys, positional, alias, ai):
+    source = tmp_path / "page.html"
+    original = b"<title>Keep this original HTML</title>"
+    source.write_bytes(original)
+    output = tmp_path / "report.md" if alias else source
+    if alias:
+        output.hardlink_to(source)
+    monkeypatch.setattr(auditor, "ai_summary", lambda *args: pytest.fail("No AI request for invalid output"))
+    args = [str(source)] if positional else ["--file", str(source)]
+    result = auditor.main(args + ["--out", str(output)] + (["--ai"] if ai else []))
+    assert source.read_bytes() == original
+    assert result == 2
+    assert "same file" in capsys.readouterr().err.lower()
+
+
 def test_ai_summary_is_generated_once_for_console_and_report(tmp_path, monkeypatch, capsys):
     source = tmp_path / "page.html"
     source.write_text("<title>Example</title>", encoding="utf-8")

@@ -365,6 +365,18 @@ def main(argv=None):
     if not target:
         ap.error("give a URL or --file <path>")
 
+    if args.out and os.path.isfile(target):
+        try:
+            same_file = os.path.samefile(target, args.out)
+        except FileNotFoundError:
+            same_file = False  # A new report path cannot be the existing input.
+        except OSError as error:
+            print(f"Could not validate report path '{args.out}': {error}", file=sys.stderr)
+            return 2
+        if same_file:
+            print("Input HTML and output report refer to the same file; choose a different --out path.", file=sys.stderr)
+            return 2
+
     try:
         html, size = fetch(target)
     except Exception as e:  # noqa
