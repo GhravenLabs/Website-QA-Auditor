@@ -126,12 +126,17 @@ class PageParser(HTMLParser):
 def fetch(target: str) -> tuple[str, int]:
     """Return (html, size_bytes). Accepts a URL or a local file path."""
     if os.path.isfile(target):
-        raw = open(target, "rb").read()
+        with open(target, "rb") as source:
+            raw = source.read()
         return raw.decode("utf-8", "replace"), len(raw)
     req = urllib.request.Request(target, headers={"User-Agent": "Website-QA-Auditor/1.0"})
     with urllib.request.urlopen(req, timeout=15) as r:
         raw = r.read()
-    return raw.decode("utf-8", "replace"), len(raw)
+        charset = r.headers.get_content_charset() or "utf-8"
+    try:
+        return raw.decode(charset, "replace"), len(raw)
+    except LookupError as error:
+        raise ValueError(f"Unsupported response charset: {charset}") from error
 
 
 def audit(p: PageParser, size_bytes: int) -> list[tuple[str, str, str]]:
