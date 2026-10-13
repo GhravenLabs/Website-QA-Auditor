@@ -5,6 +5,28 @@ import auditor
 import pytest
 
 
+def test_failed_report_replacement_preserves_previous_report(tmp_path, monkeypatch):
+    report = tmp_path / "report.md"
+    report.write_text("Previous verified report", encoding="utf-8")
+
+    def fail_replace(*args):
+        raise PermissionError("report is open")
+
+    monkeypatch.setattr(auditor.os, "replace", fail_replace)
+    with pytest.raises(PermissionError):
+        auditor.write_report(str(report), "New report")
+    assert report.read_text() == "Previous verified report"
+    assert list(tmp_path.iterdir()) == [report]
+
+
+def test_report_replacement_writes_complete_unicode_content(tmp_path):
+    report = tmp_path / "report.md"
+    report.write_text("Old report")
+    auditor.write_report(str(report), "Café audit ✅")
+    assert report.read_text(encoding="utf-8") == "Café audit ✅"
+    assert list(tmp_path.iterdir()) == [report]
+
+
 def test_cli_rejects_conflicting_input_sources_before_fetching(tmp_path, monkeypatch, capsys):
     source = tmp_path / "page.html"
     source.write_text("<title>Local page</title>", encoding="utf-8")

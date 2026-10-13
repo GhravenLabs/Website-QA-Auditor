@@ -18,6 +18,7 @@ import json
 import os
 import re
 import sys
+import tempfile
 import urllib.request
 import urllib.parse
 import urllib.error
@@ -347,6 +348,22 @@ def ai_summary(target, rows):
         return f"\n(AI summary failed: {e})"
 
 
+def write_report(path: str, content: str) -> None:
+    """Replace a report only after its complete UTF-8 content has been written."""
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", dir=os.path.dirname(os.path.abspath(path)),
+            prefix=".qa-report-", suffix=".tmp", delete=False,
+        ) as report:
+            temporary = report.name
+            report.write(content)
+        os.replace(temporary, path)
+    finally:
+        if temporary is not None and os.path.exists(temporary):
+            os.unlink(temporary)
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description="Audit a web page for SEO / a11y / mobile / social issues.")
     ap.add_argument("target", nargs="?", help="URL to audit")
@@ -403,8 +420,7 @@ def main(argv=None):
         print(summary)
     if args.out:
         try:
-            with open(args.out, "w", encoding="utf-8") as report:
-                report.write(md)
+            write_report(args.out, md)
         except OSError as error:
             print(f"Could not write report '{args.out}': {error}", file=sys.stderr)
             return 2
