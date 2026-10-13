@@ -5,6 +5,18 @@ import auditor
 import pytest
 
 
+def test_cli_rejects_conflicting_input_sources_before_fetching(tmp_path, monkeypatch, capsys):
+    source = tmp_path / "page.html"
+    source.write_text("<title>Local page</title>", encoding="utf-8")
+    report = tmp_path / "report.md"
+    monkeypatch.setattr(auditor, "fetch", lambda *args: pytest.fail("Conflicting sources must not be fetched"))
+    with pytest.raises(SystemExit) as exc:
+        auditor.main(["https://example.com", "--file", str(source), "--out", str(report)])
+    assert exc.value.code == 2
+    assert "choose either" in capsys.readouterr().err.lower()
+    assert not report.exists()
+
+
 @pytest.mark.parametrize("positional", [False, True])
 @pytest.mark.parametrize("alias", [False, True])
 @pytest.mark.parametrize("ai", [False, True])

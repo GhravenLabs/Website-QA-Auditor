@@ -355,6 +355,8 @@ def main(argv=None):
     ap.add_argument("--links", action="store_true", help="check HTTP(S) links with HEAD/GET fallback (capped at 20)")
     ap.add_argument("--ai", action="store_true", help="append an AI-written client summary")
     args = ap.parse_args(argv)
+    if args.file is not None and args.target is not None:
+        ap.error("choose either a URL or --file <path>, not both")
 
     try:  # clean unicode (em-dashes etc.) in the Windows console too
         sys.stdout.reconfigure(encoding="utf-8")
