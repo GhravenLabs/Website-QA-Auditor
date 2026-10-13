@@ -366,6 +366,9 @@ def main(argv=None):
     target = args.file or args.target
     if not target:
         ap.error("give a URL or --file <path>")
+    if args.file is not None and not os.path.isfile(args.file):
+        print(f"No such local HTML file: {args.file}", file=sys.stderr)
+        return 2
 
     if args.out and os.path.isfile(target):
         try:
