@@ -315,8 +315,9 @@ def render_markdown(target, rows, pct, letter):
     def cell(value):
         return escape(str(value), quote=False).replace("|", "\\|").replace("\r\n", "\n").replace("\r", "\n").replace("\n", "<br>")
 
+    safe_target = escape(" ".join(str(target).split()), quote=False)
     icon = {PASS: "✅", WARN: "⚠️", FAIL: "❌"}
-    out = [f"# Website QA Report — {target}", "", f"**Score: {pct}% (grade {letter})**", "",
+    out = [f"# Website QA Report — {safe_target}", "", f"**Score: {pct}% (grade {letter})**", "",
            "| Result | Check | Detail |", "|---|---|---|"]
     for sev, check, detail in rows:
         out.append(f"| {icon[sev]} | {cell(check)} | {cell(detail)} |")

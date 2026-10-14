@@ -95,3 +95,10 @@ def test_markdown_cells_preserve_table_with_pipes_and_multiline_text():
     row = next(line for line in result.splitlines() if "Title" in line)
     assert r"Title \| text" in row
     assert r"First \| second<br>&lt;script&gt;x&lt;/script&gt;" in row
+
+
+def test_markdown_heading_keeps_untrusted_target_on_one_safe_line():
+    result = auditor.render_markdown("https://example.com/\n# Injected <script>", [], 100, "A")
+    lines = result.splitlines()
+    assert lines[0] == "# Website QA Report — https://example.com/ # Injected &lt;script&gt;"
+    assert sum(line.startswith("# ") for line in lines) == 1
